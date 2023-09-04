@@ -8,6 +8,21 @@ from functools import wraps
 import datetime
 
 
+############### --- Test --- ###############
+
+@app.route('/check_stuff', methods=['GET'])
+def check_stuff():
+
+    conversations = Conversation.query.filter_by()
+
+    for convo in conversations:
+        print(convo.users)
+
+    return jsonify({"message": "Whole lotta testing"})
+
+############### --- Test --- ###############
+
+
 ############### --- ERROR --- ###############
 @app.errorhandler(405)
 def not_found(error):
@@ -70,7 +85,7 @@ def register():
 
     token = jwt.encode({'name':username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
 
-    return jsonify({ 'token':token })
+    return jsonify({ 'token':token.decode('utf-8') })
 
 
 @app.route('/login', methods=['GET'])
@@ -82,14 +97,14 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user == None:
-        
+
         return jsonify({'error':'Bad credentials'})
 
     if check_password_hash(user.password, password):
 
         token = jwt.encode({'name':user.username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
 
-        return jsonify({ 'token':token })
+        return jsonify({ 'token':token.decode('utf-8') })
 
     return jsonify({'error':'Bad credentials'})
 
@@ -97,5 +112,26 @@ def login():
 
 
 ############ --- Content endpoints --- ###########
+
+@token_required
+@app.route('/new_conversation', methods=['GET'])
+def new_conversation():
+
+    token = request.headers['token']
+    partner_name = request.headers['partner']
+
+    data = jwt.decode(token, app.config['SECRET_KEY'])
+
+    user = User.query.filter_by(username = data['name']).first()
+    partner = User.query.filter_by(username = partner_name).first()
+
+    new_convo = Conversation()
+    new_convo.users.append(user)
+    new_convo.users.append(partner)
+
+    db.session.add(new_convo)
+    db.session.commit()
+
+    return jsonify({"message":"Success"})
 
 ############ --- Content endpoints --- ###########
