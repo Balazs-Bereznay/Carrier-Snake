@@ -1,4 +1,4 @@
-from app import db
+from app import db, ma
 
 user_convo = db.Table('user_convo',
                       db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
@@ -22,3 +22,12 @@ class Message(db.Model):
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
     content = db.Column(db.String(150), nullable = False)
     sent_date = db.Column(db.Date, nullable = False)
+    
+    
+class ConversationSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Conversation
+        
+    id = ma.auto_field()    
+    users = ma.auto_field()
+    messages = ma.auto_field()
