@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User, Conversation, Message
+from app.models import User, Conversation, Message, ConversationSchema
 from flask import jsonify, redirect, request, make_response
 from sqlalchemy.exc import IntegrityError
 import jwt
@@ -133,5 +133,22 @@ def new_conversation():
     db.session.commit()
 
     return jsonify({"message":"Success"})
+
+@token_required
+@app.route('/get_conversations', methods=['GET'])
+def get_conversations():
+    
+    conversation_schema = ConversationSchema(many=True)
+    
+    token = request.headers['token']
+    data = jwt.decode(token, app.config['SECRET_KEY'])
+
+    user = User.query.filter_by(username = data['name']).first()
+    
+    
+    return jsonify({"data":conversation_schema.dump(user.conversations)})
+
+    
+    
 
 ############ --- Content endpoints --- ###########
