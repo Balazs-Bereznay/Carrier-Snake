@@ -6,6 +6,7 @@ import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import datetime
+from datetime import datetime
 
 
 ############### --- Test --- ###############
@@ -148,7 +149,18 @@ def get_conversations():
     
     return jsonify({"data":conversation_schema.dump(user.conversations)})
 
+@token_required
+@app.route('/new_message', methods=['GET'])
+def new_message():
     
+    data = request.get_json()
+    date = datetime.strptime(data['sent_date'], r'%Y.%m.%d')
     
+    message = Message(conversation_id = data['conversation_id'], content = data['content'], sent_date = date)
+    
+    db.session.add(message)
+    db.session.commit()
+    
+    return jsonify({"data":message.content})
 
 ############ --- Content endpoints --- ###########
