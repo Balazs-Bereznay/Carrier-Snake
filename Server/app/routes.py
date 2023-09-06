@@ -1,5 +1,5 @@
 from app import app, db
-from app.models import User, Conversation, Message, ConversationSchema
+from app.models import User, Conversation, Message, ConversationSchema, UserSchema
 from flask import jsonify, redirect, request, make_response
 from sqlalchemy.exc import IntegrityError
 import jwt
@@ -166,5 +166,14 @@ def new_message():
     
     return jsonify({"data":message.content})
 
-
+@token_required
+@app.route('/get_users', methods=['GET'])
+def get_users():
+    
+    users = User.query.all()
+    
+    userschema = UserSchema(many=True)
+    
+    return jsonify({"users":userschema.dump(users)})
+    
 ############ --- Content endpoints --- ###########

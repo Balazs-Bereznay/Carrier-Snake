@@ -25,6 +25,12 @@ class Message(db.Model):
     sent_date = db.Column(db.Date, nullable = False)
     
 
+class UserSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = User
+        
+    username = ma.auto_field()
+
 class MessageSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Message
