@@ -19,15 +19,24 @@ class Conversation(db.Model):
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key = True)
+    sender = db.Column(db.Integer, db.ForeignKey('user.id'))
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
     content = db.Column(db.String(150), nullable = False)
     sent_date = db.Column(db.Date, nullable = False)
     
+
+class MessageSchema(ma.SQLAlchemySchema):
+    class Meta:
+        model = Message
     
+    sender = ma.auto_field()
+    content = ma.auto_field()
+    sent_date = ma.auto_field()
+
 class ConversationSchema(ma.SQLAlchemySchema):
     class Meta:
         model = Conversation
         
     id = ma.auto_field()    
     users = ma.auto_field()
-    messages = ma.auto_field()
+    messages = ma.List(ma.Nested(MessageSchema))

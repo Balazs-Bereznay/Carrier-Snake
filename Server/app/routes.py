@@ -6,7 +6,6 @@ import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import datetime
-from datetime import datetime
 
 
 ############### --- Test --- ###############
@@ -153,14 +152,19 @@ def get_conversations():
 @app.route('/new_message', methods=['GET'])
 def new_message():
     
-    data = request.get_json()
-    date = datetime.strptime(data['sent_date'], r'%Y.%m.%d')
+    token = request.headers['token']
+    data = jwt.decode(token, app.config['SECRET_KEY'])
+    user = User.query.filter_by(username = data['name']).first()
     
-    message = Message(conversation_id = data['conversation_id'], content = data['content'], sent_date = date)
+    data = request.get_json()
+    date = datetime.datetime.strptime(data['sent_date'], r'%Y.%m.%d')
+    
+    message = Message(sender = user.id, conversation_id = data['conversation_id'], content = data['content'], sent_date = date)
     
     db.session.add(message)
     db.session.commit()
     
     return jsonify({"data":message.content})
+
 
 ############ --- Content endpoints --- ###########
