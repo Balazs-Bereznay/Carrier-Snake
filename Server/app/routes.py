@@ -35,6 +35,10 @@ def not_found(error):
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify( { 'error': 'Something went wrong!' } ), 404)
+
+@app.errorhandler(500)
+def not_found(error):
+    return make_response(jsonify( { 'error': 'Internal error' } ), 500)
 ############### --- ERROR --- ###############
 
 
@@ -53,7 +57,6 @@ def token_required(f):
 
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
-            user = User.query.filter_by(username=data['name']).first()
 
         except:
             return jsonify({'message': 'token is invalid'})
@@ -108,13 +111,21 @@ def login():
 
     return jsonify({'error':'Bad credentials'})
 
+@app.route('/validate_token')
+@token_required
+def validate_token():
+    response = make_response('token is valid')
+    response.headers['token'] = request.headers['token']
+    
+    return response
+
 ############# --- Auth endpoints --- #############
 
 
 ############ --- Content endpoints --- ###########
 
-@token_required
 @app.route('/new_conversation', methods=['GET'])
+@token_required
 def new_conversation():
 
     token = request.headers['token']
@@ -134,8 +145,8 @@ def new_conversation():
 
     return jsonify({"message":"Success"})
 
-@token_required
 @app.route('/get_conversations', methods=['GET'])
+@token_required
 def get_conversations():
     
     conversation_schema = ConversationSchema(many=True)
@@ -148,8 +159,8 @@ def get_conversations():
     
     return jsonify({"data":conversation_schema.dump(user.conversations)})
 
-@token_required
 @app.route('/new_message', methods=['GET'])
+@token_required
 def new_message():
     
     token = request.headers['token']
@@ -166,8 +177,8 @@ def new_message():
     
     return jsonify({"data":message.content})
 
-@token_required
 @app.route('/get_users', methods=['GET'])
+@token_required
 def get_users():
     
     users = User.query.all()
