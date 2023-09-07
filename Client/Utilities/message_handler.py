@@ -58,8 +58,12 @@ class RequestHandler():
             return return_code
         
         headers = {'token':self.token}
+        
+        try:
+            response = requests.get('http://127.0.0.1:5000/validate_token', headers=headers)
             
-        response = requests.get('http://127.0.0.1:5000/validate_token', headers=headers)
+        except requests.exceptions.Timeout:
+            return 1    
         
         if 'token' in response.headers:
             return 0
