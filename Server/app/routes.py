@@ -84,11 +84,14 @@ def register():
 
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"error":"Integrity Error occured"})
+        response = make_response(jsonify({"error":"Integrity Error occured"}), 409)
+        return response
+        
 
-    token = jwt.encode({'name':username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
+    response = make_response('Successful registration')
+    response.headers['username'] = username
 
-    return jsonify({ 'token':token.decode('utf-8') })
+    return response
 
 
 @app.route('/login', methods=['GET'])
