@@ -13,7 +13,7 @@ import requests
 class RequestHandler:
     token = None
      
-    def __init__(self, username, password, url='http://127.0.0.1:5000/'):
+    def __init__(self, username=None, password=None, url='http://127.0.0.1:5000/'):
         self.username = username
         self.password = password
         self.url = url
