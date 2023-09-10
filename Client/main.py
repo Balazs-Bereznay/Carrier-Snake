@@ -21,9 +21,6 @@ class Register(QtWidgets.QMainWindow, Ui_Register):
     def login_button_pressed(self):
         self.close()
 
-    def submit_button_pressed(self):
-        print(self.usernameLineEdit.text(), self.passwordLineEdit.text(), self.repasswordLineEdit.text())
-
 
 class Login(QtWidgets.QMainWindow, Ui_Login):
     def __init__(self):
@@ -39,6 +36,10 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
         self.submitButton.clicked.connect(self.submit_button_pressed)
 
         self.registerWindow = None
+
+        self.msg = QtWidgets.QMessageBox()
+        self.msg.setIcon(QtWidgets.QMessageBox.Critical)
+        self.msg.setWindowTitle("Error")
 
     def register_button_pressed(self):
 
@@ -56,17 +57,21 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
             requestHandler.password = self.registerWindow.passwordLineEdit.text()
             return_code = requestHandler.register()
 
-            if return_code != 0:
-                print("Registration unsuccessful!")
-                """TODO: open dialog saying username already taken"""
+            if return_code == 12:
+                self.msg.setText("Username already taken")
+                self.msg.exec()
 
-            else:
+            elif return_code == 1:
+                self.msg.setText("Couldn't reach server")
+                self.msg.exec()
+
+            elif return_code == 0:
                 self.registerWindow.close()
                 self.usernameLineEdit.setText(requestHandler.username)
 
         else:
-            pass
-            """TODO: open dialog saying passwords need to match"""
+            self.msg.setText("Passwords need to match")
+            self.msg.exec()
 
     def submit_button_pressed(self):
         print(self.usernameLineEdit.text(), self.passwordLineEdit.text())
@@ -76,10 +81,15 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
 
         return_code = requestHandler.get_token()
 
-        if return_code != 0:
-            print("Login failed")
+        if return_code == 1:
+            self.msg.setText("Couldn't reach server")
+            self.msg.exec()
 
-        else:
+        elif return_code == 13:
+            self.msg.setText("Bad credentials")
+            self.msg.exec()
+
+        elif return_code == 0:
             """TODO: open dashboard, close login window"""
             print(f"Logged in!\ntoken: {requestHandler.token}")
 
