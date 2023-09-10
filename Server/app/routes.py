@@ -110,7 +110,7 @@ def login():
 
         token = jwt.encode({'name':user.username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
 
-        return jsonify({ 'token':token.decode('utf-8') })
+        return jsonify({ 'token':token })
 
     return jsonify({'error':'Bad credentials'})
 

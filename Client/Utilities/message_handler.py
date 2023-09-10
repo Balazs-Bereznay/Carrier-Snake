@@ -9,12 +9,14 @@ import requests
         13: Invalid credentials
 """
 
-class RequestHandler():
+
+class RequestHandler:
     token = None
      
-    def __init__(self, username, password):
+    def __init__(self, username, password, url='http://127.0.0.1:5000/'):
         self.username = username
         self.password = password
+        self.url = url
         
     
     def register(self):
@@ -22,9 +24,9 @@ class RequestHandler():
                    'password':self.password}
         
         try:
-            response = requests.get('http://127.0.0.1:5000/register', headers=headers)
+            response = requests.get(self.url + 'register', headers=headers)
             
-        except requests.exceptions.Timeout:
+        except requests.exceptions.RequestException:
             return 1
         
         if response.status_code == 409:
@@ -39,10 +41,10 @@ class RequestHandler():
                    'password':self.password}
         
         try:
-            response = requests.get('http://127.0.0.1:5000/login', headers=headers)
+            response = requests.get(self.url + 'login', headers=headers)
             self.token = response.json()['token']
             
-        except requests.exceptions.Timeout:
+        except requests.exceptions.RequestException:
             return 1
         
         except:
@@ -60,9 +62,9 @@ class RequestHandler():
         headers = {'token':self.token}
         
         try:
-            response = requests.get('http://127.0.0.1:5000/validate_token', headers=headers)
+            response = requests.get(self.url + 'validate_token', headers=headers)
             
-        except requests.exceptions.Timeout:
+        except requests.exceptions.RequestException:
             return 1    
         
         if 'token' in response.headers:
@@ -75,9 +77,9 @@ class RequestHandler():
         
         
 if __name__ == '__main__':
-    request_handler = RequestHandler('testuser6', 'testpassword6')
+    request_handler = RequestHandler('testuser1', 'testpassword1')
     
-    print(request_handler.register())
+    print(request_handler.validate_token())
     print(request_handler.validate_token())
     print(request_handler.token)
         
