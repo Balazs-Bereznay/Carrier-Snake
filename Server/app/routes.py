@@ -2,7 +2,7 @@ from app import app, db
 from app.models import User, Conversation, Message, ConversationSchema, UserSchema
 from flask import jsonify, redirect, request, make_response
 from sqlalchemy.exc import IntegrityError
-import jwt
+from jwt import encode, decode, exceptions
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import datetime
@@ -56,10 +56,10 @@ def token_required(f):
             return jsonify({'message': 'a valid token is missing'})
 
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
+            data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
 
-        except:
-            return jsonify({'message': 'token is invalid'})
+        except exceptions.DecodeError as e:
+            return jsonify({'message': e})
         return f(*args, **kwargs)
 
     return decorator
@@ -102,15 +102,18 @@ def login():
 
     user = User.query.filter_by(username=username).first()
 
-    if user == None:
+    if user is None:
 
         return jsonify({'error':'Bad credentials'})
 
     if check_password_hash(user.password, password):
 
-        token = jwt.encode({'name':user.username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
+        token = encode({'name':user.username, 'exp':datetime.datetime.utcnow() + datetime.timedelta(days=7)}, app.config['SECRET_KEY'])
 
-        return jsonify({ 'token':token })
+        response = make_response('Logged in')
+        response.headers['token'] = token
+
+        return response
 
     return jsonify({'error':'Bad credentials'})
 
@@ -134,7 +137,7 @@ def new_conversation():
     token = request.headers['token']
     partner_name = request.headers['partner']
 
-    data = jwt.decode(token, app.config['SECRET_KEY'])
+    data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
 
     user = User.query.filter_by(username = data['name']).first()
     partner = User.query.filter_by(username = partner_name).first()
@@ -155,23 +158,25 @@ def get_conversations():
     conversation_schema = ConversationSchema(many=True)
     
     token = request.headers['token']
-    data = jwt.decode(token, app.config['SECRET_KEY'])
+    data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
 
     user = User.query.filter_by(username = data['name']).first()
-    
-    
+
     return jsonify({"data":conversation_schema.dump(user.conversations)})
+
 
 @app.route('/new_message', methods=['GET'])
 @token_required
 def new_message():
     
     token = request.headers['token']
-    data = jwt.decode(token, app.config['SECRET_KEY'])
+    data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.filter_by(username = data['name']).first()
     
     data = request.get_json()
-    date = datetime.datetime.strptime(data['sent_date'], r'%Y.%m.%d')
+    date = datetime.datetime.now()
+
+    date = date.strftime('%Y.%m.%d:%H.%M.%S')
     
     message = Message(sender = user.id, conversation_id = data['conversation_id'], content = data['content'], sent_date = date)
     
@@ -179,6 +184,7 @@ def new_message():
     db.session.commit()
     
     return jsonify({"data":message.content})
+
 
 @app.route('/get_users', methods=['GET'])
 @token_required
@@ -189,5 +195,21 @@ def get_users():
     userschema = UserSchema(many=True)
     
     return jsonify({"users":userschema.dump(users)})
-    
+
+
+@app.route('/user_by_id', methods=['GET'])
+@token_required
+def user_by_id():
+    token = request.headers['token']
+    data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    user = User.query.filter_by(username=data['name']).first()
+
+    if request.get_json()['id1'] == user.id:
+        partner = User.query.filter_by(id=request.get_json()['id2']).first()
+
+        return jsonify({'partner': partner.username})
+
+    else:
+        return jsonify({'partner': user.username})
+
 ############ --- Content endpoints --- ###########

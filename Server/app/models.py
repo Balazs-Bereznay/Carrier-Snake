@@ -1,7 +1,7 @@
 from app import db, ma
 
 user_convo = db.Table('user_convo',
-                      db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+                      db.Column('user_username', db.Integer, db.ForeignKey('user.username')),
                       db.Column('convo_id', db.Integer, db.ForeignKey('conversation.id')))
 
 class User(db.Model):
@@ -22,14 +22,15 @@ class Message(db.Model):
     sender = db.Column(db.Integer, db.ForeignKey('user.id'))
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'))
     content = db.Column(db.String(150), nullable = False)
-    sent_date = db.Column(db.Date, nullable = False)
+    sent_date = db.Column(db.String(40), nullable = False)
     
 
 class UserSchema(ma.SQLAlchemySchema):
     class Meta:
         model = User
-        
+
     username = ma.auto_field()
+
 
 class MessageSchema(ma.SQLAlchemySchema):
     class Meta:
@@ -38,6 +39,7 @@ class MessageSchema(ma.SQLAlchemySchema):
     sender = ma.auto_field()
     content = ma.auto_field()
     sent_date = ma.auto_field()
+
 
 class ConversationSchema(ma.SQLAlchemySchema):
     class Meta:

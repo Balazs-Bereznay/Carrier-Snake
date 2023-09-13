@@ -1,14 +1,54 @@
 import sys
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtGui import QCloseEvent
 
 from Utilities.login import Ui_Login
 from Utilities.register import Ui_Register
 from Utilities.message_handler import RequestHandler
+from Utilities.puller import Puller
+
+
+class Dashboard(QtWidgets.QMainWindow):
+    EVENT = QtCore.Signal(list)
+    ERROR = QtCore.Signal(str)
+
+    def __init__(self):
+        super(Dashboard, self).__init__()
+
+        self.setWindowTitle("Dashboard")
+
+        self.puller = Puller(requestHandler, self.puller_event_handler)
+        self.puller.start_pulling()
+
+        self.EVENT.connect(self.on_event)
+
+    def puller_event_handler(self, data):
+        if isinstance(data, list):
+            self.EVENT.emit(data)
+
+        elif isinstance(data, str):
+            self.ERROR.emit("Error occured while pulling information")
+
+    @QtCore.Slot(list)
+    def on_event(self, data):
+
+        for users in data[1]:
+            self.handle_conversation(users)
+
+    def handle_conversation(self, users):
+
+        partner = requestHandler.get_partner_by_ids(users)
+
+        #Add conversation to the list
+
+    def closeEvent(self, event):
+        self.puller.stop_pulling()
+        event.accept()
 
 
 class Register(QtWidgets.QMainWindow, Ui_Register):
-    def __init__(self, parent=None):
-        super(Register, self).__init__(parent)
+    def __init__(self):
+        super(Register, self).__init__()
         self.setupUi(self)
 
         self.setWindowTitle("Register")
@@ -36,6 +76,7 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
         self.submitButton.clicked.connect(self.submit_button_pressed)
 
         self.registerWindow = None
+        self.dashboard = None
 
         self.msg = QtWidgets.QMessageBox()
         self.msg.setIcon(QtWidgets.QMessageBox.Critical)
@@ -43,7 +84,7 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
 
     def register_button_pressed(self):
 
-        self.registerWindow = Register(self)
+        self.registerWindow = Register()
 
         self.registerWindow.submitButton.clicked.connect(self.register_submit_button_pressed)
 
@@ -74,7 +115,6 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
             self.msg.exec()
 
     def submit_button_pressed(self):
-        print(self.usernameLineEdit.text(), self.passwordLineEdit.text())
 
         requestHandler.username = self.usernameLineEdit.text()
         requestHandler.password = self.passwordLineEdit.text()
@@ -90,8 +130,15 @@ class Login(QtWidgets.QMainWindow, Ui_Login):
             self.msg.exec()
 
         elif return_code == 0:
-            """TODO: open dashboard, close login window"""
-            print(f"Logged in!\ntoken: {requestHandler.token}")
+            self.dashboard = Dashboard()
+            self.hide()
+            self.dashboard.show()
+
+    def logout_button_pressed(self):
+        self.dashboard.close()
+        self.usernameLineEdit.setText(requestHandler.username)
+        self.passwordLineEdit.clear()
+        self.show()
 
 
 app = QtWidgets.QApplication(sys.argv)
