@@ -1,24 +1,36 @@
 import sys
-from PySide6 import QtWidgets, QtCore
-from PySide6.QtGui import QCloseEvent
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtWidgets import QAbstractItemView
 
 from Utilities.login import Ui_Login
 from Utilities.register import Ui_Register
+from Utilities.dashboard import Ui_Dashboard
+from Utilities.models import ConversationModel
 from Utilities.message_handler import RequestHandler
 from Utilities.puller import Puller
 
 
-class Dashboard(QtWidgets.QMainWindow):
+class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
     EVENT = QtCore.Signal(list)
     ERROR = QtCore.Signal(str)
 
     def __init__(self):
         super(Dashboard, self).__init__()
+        self.setupUi(self)
 
         self.setWindowTitle("Dashboard")
 
-        self.puller = Puller(requestHandler, self.puller_event_handler)
+        self.model = ConversationModel()
+        self.convoList.setModel(self.model)
+        self.convoList.setModelColumn(0)
+        self.convoList.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.convoList.doubleClicked.connect(self.convo_clicked)
+
+        self.addButton.clicked.connect(self.add_button_clicked)
+
+        self.puller = Puller(requestHandler, self.puller_event_handler, target='conversation')
         self.puller.start_pulling()
+        self.conversations = []
 
         self.EVENT.connect(self.on_event)
 
@@ -27,19 +39,34 @@ class Dashboard(QtWidgets.QMainWindow):
             self.EVENT.emit(data)
 
         elif isinstance(data, str):
-            self.ERROR.emit("Error occured while pulling information")
+            print("Error occured while pulling information")
 
     @QtCore.Slot(list)
     def on_event(self, data):
 
-        for users in data[1]:
-            self.handle_conversation(users)
+        for conversation in data:
+            if conversation not in self.conversations:
 
-    def handle_conversation(self, users):
+                self.handle_conversation(conversation[1], conversation[0])
+                self.conversations.append(conversation)
+
+    def handle_conversation(self, users, convo_id):
 
         partner = requestHandler.get_partner_by_ids(users)
 
-        #Add conversation to the list
+        self.model.conversations.append((convo_id, partner))
+        self.model.layoutChanged.emit()
+
+    def convo_clicked(self, index):
+        print(self.model.itemData(index))
+
+    def add_button_clicked(self):
+        return_code = requestHandler.new_conversation(self.newConvoInput.text())
+
+        print(return_code)
+
+        #TODO: open the chat window with the new convo
+
 
     def closeEvent(self, event):
         self.puller.stop_pulling()

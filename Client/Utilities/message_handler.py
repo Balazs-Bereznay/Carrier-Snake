@@ -5,6 +5,8 @@ import requests
     error codes:
         0: Task finished with no errors
         1: Couldn't reach api
+        10: Can't create conversation with oneself
+        11: No such user
         12: Database integrity error, probably username already in use
         13: Invalid credentials
 """
@@ -112,7 +114,59 @@ class RequestHandler:
 
             return return_code
 
-        
+    def new_conversation(self, partner):
+        return_code = self.validate_token()
+
+        if return_code == 0:
+
+            headers = {'token': self.token,
+                       'partner': partner}
+
+            try:
+
+                response = requests.get(self.url + 'new_conversation', headers=headers)
+
+            except requests.exceptions.RequestException:
+
+                return 1
+
+            if response.status_code == 500:
+
+                return 11
+
+            if response.json()['message'] == "Bad Action":
+                return 10
+
+            return 0
+
+        else:
+            return return_code
+
+    def get_messages_conversation(self, conversation_id):
+        return_code = self.validate_token()
+
+        if return_code == 0:
+
+            headers = {'token': self.token,
+                       'conversation_id': conversation_id}
+
+            try:
+
+                response = requests.get(self.url + 'get_messages_conversation', headers=headers)
+
+            except requests.exceptions.RequestException:
+
+                return 1
+
+            if response.status_code == 500:
+                return 11
+
+            return response.json()['messages']
+
+        else:
+            return return_code
+
+
 if __name__ == '__main__':
     request_handler = RequestHandler('testuser2', 'testpassword2')
     

@@ -142,6 +142,9 @@ def new_conversation():
     user = User.query.filter_by(username = data['name']).first()
     partner = User.query.filter_by(username = partner_name).first()
 
+    if user == partner:
+        return jsonify({'message': 'Bad Action'})
+
     new_convo = Conversation()
     new_convo.users.append(user)
     new_convo.users.append(partner)
@@ -149,7 +152,7 @@ def new_conversation():
     db.session.add(new_convo)
     db.session.commit()
 
-    return jsonify({"message":"Success"})
+    return jsonify({"message": "Success"})
 
 @app.route('/get_conversations', methods=['GET'])
 @token_required
@@ -211,5 +214,17 @@ def user_by_id():
 
     else:
         return jsonify({'partner': user.username})
+
+
+@app.route('/get_messages_conversation', methods=['GET'])
+@token_required
+def get_messages_conversation():
+    convo_id = request.headers['convoid']
+
+    conversation = Conversation.query.filter_by(id=convo_id).first()
+
+    conversation_schema = ConversationSchema()
+
+    return jsonify({'messages': conversation_schema.dump(conversation)['messages']})
 
 ############ --- Content endpoints --- ###########

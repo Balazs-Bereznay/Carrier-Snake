@@ -10,9 +10,14 @@ class Puller:
     pull = False
     last_datetime = datetime.datetime(1995, 10, 12)
 
-    def __init__(self, requestHandler, event_listener):
-        self.requestHandler = requestHandler
+    def __init__(self, requesthandler, event_listener, target, conversation_id=None):
+        self.requestHandler = requesthandler
         self.event_listener = event_listener
+
+        self.conversations = []
+
+        self.target = target
+        self.conversation_id = conversation_id
 
     def start_pulling(self):
         self.pull = True
@@ -29,32 +34,43 @@ class Puller:
             time.sleep(1)
 
     def pull_data(self):
-        try:
-            response = self.requestHandler.get_conversations()
+        if self.target == "message":
 
-        except Exception as e:
-            self.event_listener(e)
-            return
+            try:
+                response = self.requestHandler.get_messages_conversation(self.conversation_id)
 
-        conversations = response.json()['data']
+            except Exception as e:
+                self.event_listener(e)
+                return
 
-        new_messages = [[],[]]
+            messages = response.json()['messages']
 
-        latest = self.last_datetime
-
-        for conversation in conversations:
-            messages = sorted(conversation['messages'], key=lambda x: x['sent_date'])
+            messages = sorted(messages, key=lambda x: x['sent_date'])
 
             if len(messages) and datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S') > self.last_datetime:
-                new_messages[0].append(conversation['id'])
-                new_messages[1].append(conversation['users'])
-                new_messages.append(list(filter(lambda x: datetime.datetime.strptime(x["sent_date"], '%Y.%m.%d:%H.%M.%S') > self.last_datetime, messages)))
+                self.event_listener(list(filter(lambda x: datetime.datetime.strptime(x['sent_date'], '%Y.%m.%d:%H.%M.%S') > self.last_datetime, messages)))
 
-                if datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S') > latest:
-                    latest = datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S')
+                self.last_datetime = datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S')
 
-        self.event_listener(new_messages)
-        self.last_datetime = latest
+        elif self.target == "conversation":
+
+            try:
+                response = self.requestHandler.get_conversations()
+
+            except Exception as e:
+                self.event_listener(e)
+                return
+
+            conversations = response.json()['data']
+
+            latest = self.last_datetime
+
+            for conversation in conversations:
+                if conversation not in self.conversations:
+                    self.conversations.append([conversation['id'], conversation['users']])
+
+            self.event_listener(self.conversations)
+
 
 
 if __name__ == "__main__":
