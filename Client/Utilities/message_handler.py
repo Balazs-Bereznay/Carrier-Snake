@@ -6,7 +6,7 @@ import requests
         0: Task finished with no errors
         1: Couldn't reach api
         10: Can't create conversation with oneself
-        11: No such user
+        11: No such object
         12: Database integrity error, probably username already in use
         13: Invalid credentials
 """
@@ -130,12 +130,33 @@ class RequestHandler:
 
                 return 1
 
-            if response.status_code == 500:
-
+            if response.status_code == 404:
                 return 11
 
             if response.json()['message'] == "Bad Action":
                 return 10
+
+            return 0
+
+        else:
+            return return_code
+
+    def delete_conversation(self, conversation_id):
+        return_code = self.validate_token()
+
+        if return_code == 0:
+            headers = {'token': self.token,
+                       'convoid': str(conversation_id)}
+
+            try:
+                response = requests.get(self.url + 'delete_conversation', headers=headers)
+
+            except requests.exceptions.RequestException as e:
+                print(e)
+                return 1
+
+            if response.status_code != 200:
+                return 11
 
             return 0
 
@@ -148,7 +169,7 @@ class RequestHandler:
         if return_code == 0:
 
             headers = {'token': self.token,
-                       'conversation_id': conversation_id}
+                       'convoid': conversation_id}
 
             try:
 

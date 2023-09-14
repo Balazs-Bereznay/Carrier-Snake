@@ -26,7 +26,12 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
         self.convoList.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.convoList.doubleClicked.connect(self.convo_clicked)
 
+        self.msg = QtWidgets.QMessageBox()
+        self.msg.setIcon(QtWidgets.QMessageBox.Critical)
+        self.msg.setWindowTitle("Error")
+
         self.addButton.clicked.connect(self.add_button_clicked)
+        self.deleteButton.clicked.connect(self.delete_button_clicked)
 
         self.puller = Puller(requestHandler, self.puller_event_handler, target='conversation')
         self.puller.start_pulling()
@@ -67,6 +72,40 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
 
         #TODO: open the chat window with the new convo
 
+    def delete_button_clicked(self):
+        msgBox = QtWidgets.QMessageBox()
+        msgBox.setIcon(QtWidgets.QMessageBox.Information)
+        msgBox.setText("Are you sure you want to delete the conversation?")
+        msgBox.setWindowTitle("Delete")
+        msgBox.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+
+        button_clicked = msgBox.exec()
+
+        if button_clicked == QtWidgets.QMessageBox.Ok:
+            indexes = self.convoList.selectedIndexes()
+            if indexes:
+                index = indexes[0]
+
+                return_code = requestHandler.delete_conversation(self.model.itemData(index)[2])
+
+                if return_code == 0:
+                    for conversation in self.conversations:
+                        if self.model.itemData(index)[2] == conversation[0]:
+
+                            self.puller.conversations.remove(conversation)
+                            self.conversations.remove(conversation)
+
+                    print(self.conversations)
+                    print(self.puller.conversations)
+
+                    del self.model.conversations[index.row()]
+                    self.model.layoutChanged.emit()
+
+                    self.convoList.clearSelection()
+
+                else:
+                    self.msg.setText(f"Error occurred: {return_code}")
+                    self.msg.exec()
 
     def closeEvent(self, event):
         self.puller.stop_pulling()

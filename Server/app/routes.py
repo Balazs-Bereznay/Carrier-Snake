@@ -140,7 +140,7 @@ def new_conversation():
     data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
 
     user = User.query.filter_by(username = data['name']).first()
-    partner = User.query.filter_by(username = partner_name).first()
+    partner = User.query.filter_by(username = partner_name).first_or_404()
 
     if user == partner:
         return jsonify({'message': 'Bad Action'})
@@ -166,6 +166,20 @@ def get_conversations():
     user = User.query.filter_by(username = data['name']).first()
 
     return jsonify({"data":conversation_schema.dump(user.conversations)})
+
+
+@app.route('/delete_conversation', methods=['GET'])
+@token_required
+def delete_conversation():
+
+    conversation_id = int(request.headers['convoid'])
+
+    conversation = Conversation.query.filter_by(id=conversation_id).first()
+
+    db.session.delete(conversation)
+    db.session.commit()
+
+    return jsonify({"message": "Success"})
 
 
 @app.route('/new_message', methods=['GET'])
@@ -213,7 +227,9 @@ def user_by_id():
         return jsonify({'partner': partner.username})
 
     else:
-        return jsonify({'partner': user.username})
+        partner = User.query.filter_by(id=request.get_json()['id1']).first()
+
+        return jsonify({'partner': partner.username})
 
 
 @app.route('/get_messages_conversation', methods=['GET'])

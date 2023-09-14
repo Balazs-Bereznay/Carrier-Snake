@@ -63,14 +63,11 @@ class Puller:
 
             conversations = response.json()['data']
 
-            latest = self.last_datetime
-
             for conversation in conversations:
-                if conversation not in self.conversations:
+                if conversation['id'] not in [x[0] for x in self.conversations]:
                     self.conversations.append([conversation['id'], conversation['users']])
 
             self.event_listener(self.conversations)
-
 
 
 if __name__ == "__main__":
