@@ -104,7 +104,7 @@ class RequestHandler:
 
             }
 
-            partner = requests.get(self.url + 'user_by_id', headers=headers, json=data)
+            partner = requests.get(self.url + 'partner_by_ids', headers=headers, json=data)
 
             partner = partner.json()['partner']
 
@@ -113,6 +113,21 @@ class RequestHandler:
         else:
 
             return return_code
+
+    def user_by_id(self, user_id):
+        return_code = self.validate_token()
+
+        if return_code == 0:
+            headers = {'token': self.token,
+                       'userid': str(user_id)}
+
+            response = requests.get(self.url + 'user_by_id', headers=headers)
+
+            print(response.json())
+
+            return response.json()['username']
+
+        return return_code
 
     def new_conversation(self, partner):
         return_code = self.validate_token()
@@ -175,7 +190,8 @@ class RequestHandler:
 
                 response = requests.get(self.url + 'get_messages_conversation', headers=headers)
 
-            except requests.exceptions.RequestException:
+            except requests.exceptions.RequestException as e:
+                print(e)
 
                 return 1
 
@@ -187,6 +203,31 @@ class RequestHandler:
         else:
             return return_code
 
+    def new_message(self, conversation_id, content):
+        return_code = self.validate_token()
+
+        if return_code == 0:
+
+            headers = {'token': self.token}
+
+            data = {'conversation_id': conversation_id,
+                    'content': content}
+
+            try:
+                response = requests.get(self.url + 'new_message', headers=headers, json=data)
+
+            except requests.exceptions.RequestException as e:
+                print(e)
+
+                return 1
+
+            if response.status_code != 200:
+                return 11
+
+            return 0
+
+        else:
+            return return_code
 
 if __name__ == '__main__':
     request_handler = RequestHandler('testuser2', 'testpassword2')

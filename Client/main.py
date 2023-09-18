@@ -5,9 +5,79 @@ from PySide6.QtWidgets import QAbstractItemView
 from Utilities.login import Ui_Login
 from Utilities.register import Ui_Register
 from Utilities.dashboard import Ui_Dashboard
+from Utilities.chatwindow import Ui_ChatWindow
 from Utilities.models import ConversationModel
 from Utilities.message_handler import RequestHandler
 from Utilities.puller import Puller
+
+
+class ChatWindow(QtWidgets.QMainWindow, Ui_ChatWindow):
+    EVENT = QtCore.Signal(list)
+    ERROR = QtCore.Signal(str)
+
+    messages = []
+
+    def __init__(self, conversation_id, partner):
+        super(ChatWindow, self).__init__()
+        self.setupUi(self)
+
+        self.conversation_id = conversation_id
+
+        self.puller = Puller(requestHandler, self.puller_event_handler, target='message', conversation_id=self.conversation_id)
+        self.puller.start_pulling()
+        self.EVENT.connect(self.on_event)
+
+        self.setWindowTitle(f"Chat with {partner}")
+
+        self.widget = QtWidgets.QWidget()
+        self.vbox = QtWidgets.QVBoxLayout()
+        self.chat.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.chat.verticalScrollBar().rangeChanged.connect(self.resize_scroll)
+
+        self.sendButton.clicked.connect(self.send_button_clicked)
+
+    def puller_event_handler(self, data):
+        if isinstance(data, list):
+            self.EVENT.emit(data)
+
+        elif isinstance(data, str):
+            print("Error occurred while pulling messages")
+
+    @QtCore.Slot(list)
+    def on_event(self, data):
+        for message in data:
+            content = message['content']
+            sender = message['sender']
+            sent_date = message['sent_date']
+
+            self.message_handler(sender, content)
+
+        self.chat.verticalScrollBar().setValue(self.chat.verticalScrollBar().maximum())
+
+    def message_handler(self, sender, content):
+
+        sender = requestHandler.user_by_id(sender)
+
+        message = QtWidgets.QLabel(f"{sender}\n{content}")
+        self.vbox.addWidget(message)
+
+        self.widget.setLayout(self.vbox)
+
+        self.chat.setWidget(self.widget)
+
+    def send_button_clicked(self):
+        content = self.messageEdit.toPlainText()
+
+        self.messageEdit.clear()
+
+        requestHandler.new_message(self.conversation_id, content)
+
+    def resize_scroll(self, minimum, maximum):
+        self.chat.verticalScrollBar().setValue(maximum)
+
+    def closeEvent(self, event):
+        self.puller.stop_pulling()
+        event.accept()
 
 
 class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
@@ -29,6 +99,8 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
         self.msg = QtWidgets.QMessageBox()
         self.msg.setIcon(QtWidgets.QMessageBox.Critical)
         self.msg.setWindowTitle("Error")
+
+        self.chat_window = None
 
         self.addButton.clicked.connect(self.add_button_clicked)
         self.deleteButton.clicked.connect(self.delete_button_clicked)
@@ -65,6 +137,11 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
     def convo_clicked(self, index):
         print(self.model.itemData(index))
 
+        self.chat_window = ChatWindow(conversation_id=self.model.itemData(index)[2], partner=self.model.itemData(index)[0])
+        self.chat_window.show()
+
+
+
     def add_button_clicked(self):
         return_code = requestHandler.new_conversation(self.newConvoInput.text())
 
@@ -94,9 +171,6 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
 
                             self.puller.conversations.remove(conversation)
                             self.conversations.remove(conversation)
-
-                    print(self.conversations)
-                    print(self.puller.conversations)
 
                     del self.model.conversations[index.row()]
                     self.model.layoutChanged.emit()

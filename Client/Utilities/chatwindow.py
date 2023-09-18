@@ -17,7 +17,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QMainWindow, QPlainTextEdit, QPushButton,
     QScrollArea, QSizePolicy, QWidget)
-class Ui_MainWindow(object):
+class Ui_ChatWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
@@ -58,7 +58,7 @@ class Ui_MainWindow(object):
         self.sendButton.setGeometry(QRect(350, 330, 41, 41))
         self.sendButton.setStyleSheet(u"QPushButton {background-color: rgb(4, 154, 180);font-size: 13px;border: none;border-radius: 19px;}QPushButton:hover {background-color: rgb(4, 191, 224);}")
         icon1 = QIcon()
-        icon1.addFile(u"paper-airplane5825.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon1.addFile(u"Utilities\paper-airplane5825.png", QSize(), QIcon.Normal, QIcon.Off)
         self.sendButton.setIcon(icon1)
         self.sendButton.setIconSize(QSize(48, 48))
         self.chat = QScrollArea(self.centralwidget)

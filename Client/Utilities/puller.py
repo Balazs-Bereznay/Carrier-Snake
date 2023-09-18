@@ -6,7 +6,7 @@ import requests
 
 
 class Puller:
-    thread : Thread
+    thread: Thread
     pull = False
     last_datetime = datetime.datetime(1995, 10, 12)
 
@@ -26,7 +26,7 @@ class Puller:
 
     def stop_pulling(self):
         self.pull = False
-        self.last_datetime = 0
+        self.last_datetime = datetime.datetime(1995, 10, 12)
 
     def infinite_pull(self):
         while self.pull:
@@ -37,19 +37,22 @@ class Puller:
         if self.target == "message":
 
             try:
-                response = self.requestHandler.get_messages_conversation(self.conversation_id)
+                response = self.requestHandler.get_messages_conversation(str(self.conversation_id))
 
             except Exception as e:
                 self.event_listener(e)
                 return
 
-            messages = response.json()['messages']
+            if not isinstance(response, list):
+                self.event_listener('error')
+                return
+
+            messages = response
 
             messages = sorted(messages, key=lambda x: x['sent_date'])
 
             if len(messages) and datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S') > self.last_datetime:
                 self.event_listener(list(filter(lambda x: datetime.datetime.strptime(x['sent_date'], '%Y.%m.%d:%H.%M.%S') > self.last_datetime, messages)))
-
                 self.last_datetime = datetime.datetime.strptime(messages[-1]['sent_date'], '%Y.%m.%d:%H.%M.%S')
 
         elif self.target == "conversation":

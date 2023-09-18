@@ -58,8 +58,8 @@ def token_required(f):
         try:
             data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
 
-        except exceptions.DecodeError as e:
-            return jsonify({'message': e})
+        except:
+            return jsonify({'message': 'Invalid token'})
         return f(*args, **kwargs)
 
     return decorator
@@ -214,9 +214,9 @@ def get_users():
     return jsonify({"users":userschema.dump(users)})
 
 
-@app.route('/user_by_id', methods=['GET'])
+@app.route('/partner_by_ids', methods=['GET'])
 @token_required
-def user_by_id():
+def partner_by_ids():
     token = request.headers['token']
     data = decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
     user = User.query.filter_by(username=data['name']).first()
@@ -242,5 +242,14 @@ def get_messages_conversation():
     conversation_schema = ConversationSchema()
 
     return jsonify({'messages': conversation_schema.dump(conversation)['messages']})
+
+@app.route('/user_by_id', methods=['GET'])
+@token_required
+def user_by_id():
+    user_id = request.headers['userid']
+
+    user = User.query.filter_by(id=user_id).first()
+
+    return jsonify({'username': user.username})
 
 ############ --- Content endpoints --- ###########
