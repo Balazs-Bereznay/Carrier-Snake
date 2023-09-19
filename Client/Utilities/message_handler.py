@@ -123,8 +123,6 @@ class RequestHandler:
 
             response = requests.get(self.url + 'user_by_id', headers=headers)
 
-            print(response.json())
-
             return response.json()['username']
 
         return return_code

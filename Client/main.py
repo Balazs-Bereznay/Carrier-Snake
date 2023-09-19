@@ -58,7 +58,14 @@ class ChatWindow(QtWidgets.QMainWindow, Ui_ChatWindow):
 
         sender = requestHandler.user_by_id(sender)
 
-        message = QtWidgets.QLabel(f"{sender}\n{content}")
+        txt = f"<div style='font-weight: bold; font-size: 14px'>{sender}</div><div style='font-size: 14px'>{content.strip()}</div>"
+
+        message = QtWidgets.QLabel(txt)
+
+        if sender == requestHandler.username:
+
+            message.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight)
+
         self.vbox.addWidget(message)
 
         self.widget.setLayout(self.vbox)
@@ -135,8 +142,6 @@ class Dashboard(QtWidgets.QMainWindow, Ui_Dashboard):
         self.model.layoutChanged.emit()
 
     def convo_clicked(self, index):
-        print(self.model.itemData(index))
-
         self.chat_window = ChatWindow(conversation_id=self.model.itemData(index)[2], partner=self.model.itemData(index)[0])
         self.chat_window.show()
 
